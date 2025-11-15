@@ -14,7 +14,7 @@ function RegisterPage() {
 
     try {
       // 🔹 Call backend registration endpoint
-      const response = await fetch("http://localhost:8080/api/Login/registration", {
+      const response = await fetch("http://localhost:8080/api/Auth/registration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password }),
