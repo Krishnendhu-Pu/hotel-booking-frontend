@@ -25,7 +25,7 @@ const BookingForm = () => {
         }),
       });
       if (!response.ok) throw new Error("Failed to create booking");
-      const data = await response.json().catch(() => null);
+      
       alert("Booking successful!");
       setCustomerName("");
       setRoomType("Deluxe");
@@ -101,7 +101,7 @@ const BookingForm = () => {
             whiteSpace: "nowrap",
             fontSize: "2rem",
             fontWeight: "bold",
-            color: "#2d69a6ff",
+            color: "#003366",
             textShadow: "0 2px 8px #7FFFD4"
           }}
           className="mb-4"
