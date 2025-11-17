@@ -4,6 +4,8 @@ import HomePage from "./HomePage";
 import LoginPage from "./LoginPage";
 import RegisterPage from "./RegisterPage";
 import ForgotPasswordPage from "./ForgotPasswordPage";
+import Home from "./Home";
+import BookingForm from "./BookingForm";
 
 function App() {
    return (
@@ -13,6 +15,8 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/bookings" element={<BookingForm />} />
       </Routes>
     </Router>
   );
