@@ -101,7 +101,7 @@ const BookingForm = () => {
             whiteSpace: "nowrap",
             fontSize: "2rem",
             fontWeight: "bold",
-            color: "#003366",
+            color: "#2d69a6ff",
             textShadow: "0 2px 8px #7FFFD4"
           }}
           className="mb-4"
