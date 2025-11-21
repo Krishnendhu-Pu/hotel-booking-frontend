@@ -1,32 +1,19 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
-function ForgotPasswordPage() {
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    setError("");
-
+    setMessage("");
     try {
-      await axios.post("http://localhost:8080/api/Auth/forgot-password", {
-        email,
-      });
-
-      setSubmitted(true);
-
-      // Wait 1.5 seconds → move to OTP page
-      setTimeout(() => {
-        navigate("/verify-otp", { state: { email } });
-      }, 1500);
-
+      await axios.post("http://localhost:8080/api/Auth/forgot-password", { email });
+      setMessage("✅ OTP sent to your email");
+      // Optional: add your own redirect or animation logic here
     } catch (err) {
-      console.log(err);
-      setError("❌ Email not found. Try again.");
+      setMessage("❌ Email not found");
     }
   };
 
@@ -69,56 +56,52 @@ function ForgotPasswordPage() {
           Forgot Password
         </h2>
 
-        {!submitted ? (
-          <>
-            {error && (
-              <div className="alert alert-danger text-start">{error}</div>
-            )}
+        <form onSubmit={handleSendOtp}>
+          <div className="mb-3 text-start">
+            <label
+              htmlFor="email"
+              className="form-label fw-bold"
+              style={{ color: "rgb(0,50,100)", fontSize: "1.07rem" }}
+            >
+              Enter your email address
+            </label>
+            <input
+              type="email"
+              id="email"
+              className="form-control"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
 
-            <form onSubmit={handleSubmit}>
-              <div className="mb-3 text-start">
-                <label
-                  htmlFor="email"
-                  className="form-label fw-bold"
-                  style={{ color: "rgb(0,50,100)", fontSize: "1.07rem" }}
-                >
-                  Enter your email address
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  className="form-control"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+          <button
+            type="submit"
+            className="btn w-100"
+            style={{
+              backgroundColor: "rgb(0,50,100)",
+              color: "white",
+              border: "none",
+              fontWeight: "bold",
+              fontSize: "1.12rem",
+              letterSpacing: "0.02em",
+              boxShadow: "0 2px 8px rgba(0,50,100,0.10)",
+            }}
+          >
+            Send OTP
+          </button>
+        </form>
 
-              <button
-                type="submit"
-                className="btn w-100"
-                style={{
-                  backgroundColor: "rgb(0,50,100)",
-                  color: "white",
-                  border: "none",
-                  fontWeight: "bold",
-                  fontSize: "1.12rem",
-                  letterSpacing: "0.02em",
-                  boxShadow: "0 2px 8px rgba(0,50,100,0.10)",
-                }}
-              >
-                Send OTP
-              </button>
-            </form>
-          </>
-        ) : (
-          <div className="alert alert-success" role="alert">
-            ✅ OTP sent to your email! Redirecting…
+        {message && (
+          <div
+            className={`alert ${message.startsWith("✅") ? "alert-success" : "alert-danger"} mt-4 text-center`}
+            role="alert"
+          >
+            {message}
           </div>
         )}
       </div>
     </div>
   );
 }
-
-export default ForgotPasswordPage;
