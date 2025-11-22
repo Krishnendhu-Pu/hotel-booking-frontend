@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
       setMessage("✅ OTP sent to your email");
       // Optional: add your own redirect or animation logic here
     } catch (err) {
-      setMessage("❌ Email not found");
+      setMessage("❌Error Email not found");
     }
   };
 
