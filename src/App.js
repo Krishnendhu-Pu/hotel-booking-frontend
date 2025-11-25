@@ -16,7 +16,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/home" element={<Home />} />
-        <Route path="/bookings" element={<BookingForm />} />
+        <Route path="/bookings/new" element={<BookingForm />} />
       </Routes>
     </Router>
   );

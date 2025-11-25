@@ -1,12 +1,23 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import BookingForm from "./BookingForm";
+import PreviousBookings from "./PreviousBookings";
 
 export default function Home() {
   const navigate = useNavigate();
   const username = localStorage.getItem("username") || "Guest";
   const [openSection, setOpenSection] = useState(null);
+  const [currentPage, setCurrentPage] = useState(null);
 
   const features = [
+    {
+      title: "Home",
+      children: [
+        { title: "Dashboard", path: "/home/dashboard" },
+        { title: "Overview", path: "/home/overview" },
+        { title: "Statistics", path: "/home/statistics" },
+      ],
+    },
     {
       title: "Booking",
       children: [
@@ -87,52 +98,187 @@ export default function Home() {
     navigate("/login");
   };
 
+  const handleNavigate = (path) => {
+    setCurrentPage(path);
+  };
+
+  const renderContent = () => {
+    switch (currentPage) {
+      case "/home/dashboard":
+      case "/home/overview":
+      case "/home/statistics":
+        return (
+          <div style={{ textAlign: "center" }}>
+            <h2
+              style={{
+                color: "#003366",
+                textShadow: "0 2px 8px #7FFFD4",
+                fontSize: "2.5rem",
+                fontWeight: "bold",
+              }}
+            >
+              Welcome to Hotel Management System
+            </h2>
+            <p
+              style={{
+                color: "#85afdaff",
+                fontSize: "1.2rem",
+                marginTop: "1rem",
+              }}
+            >
+              Select a menu item to get started
+            </p>
+          </div>
+        );
+      case "/bookings/new":
+        return <BookingForm />;
+      case "/bookings/previous":       
+          return <PreviousBookings />;
+      case "/bookings/summary":
+        return (
+          <div style={{ color: "#85afdaff", fontSize: "1.5rem" }}>
+            Booking Summary - Coming Soon
+          </div>
+        );
+      default:
+        return (
+          <div style={{ textAlign: "center" }}>
+            <h2
+              style={{
+                color: "#003366",
+                textShadow: "0 2px 8px #7FFFD4",
+                fontSize: "2.5rem",
+                fontWeight: "bold",
+              }}
+            >
+              Welcome to Hotel Management System
+            </h2>
+            <p
+              style={{
+                color: "#85afdaff",
+                fontSize: "1.2rem",
+                marginTop: "1rem",
+              }}
+            >
+              Select a menu item to get started
+            </p>
+          </div>
+        );
+    }
+  };
+
+  const menuTextStyle = {
+    color: "#85afdaff",
+    textShadow: "0 2px 8px #032c1eff",
+    fontWeight: "bold",
+    cursor: "pointer",
+  };
+
   return (
     <div
-      className="h-screen w-screen flex"
       style={{
+        display: "flex",
+        height: "100vh",
+        width: "100vw",
+        margin: 0,
+        padding: 0,
+        overflow: "hidden",
         background:
-          "linear-gradient(rgba(0,0,50,0.6), rgba(0,50,100,0.6)), url('https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=1950&q=80') center/cover no-repeat",
-        color: "white",
+          "linear-gradient(rgba(0,0,50,0.6), rgba(0,50,100,0.7)), url('https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=1950&q=80') center/cover no-repeat",
       }}
     >
-      {/* LEFT SIDEBAR */}
-      <div className="w-64 bg-[#003366ee] h-full flex flex-col relative">
-        {/* Welcome at top */}
-        <div className="flex justify-between items-center p-4 border-b border-blue-800">
-          <h2 className="text-2xl font-bold">Welcome, {username}</h2>
-          <button
-            onClick={handleLogout}
-            className="bg-[#003366] px-4 py-2 rounded-xl font-bold shadow-lg hover:bg-blue-800"
+      {/* Sidebar */}
+      <div
+        style={{
+          width: "256px",
+          height: "100vh",
+          backgroundColor: "#003366ee",
+          display: "flex",
+          flexDirection: "column",
+          flexShrink: 0,
+        }}
+      >
+        {/* Welcome */}
+        <div
+          style={{
+            padding: "1rem",
+            borderBottom: "1px solid #1e40af",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "1.2rem",
+              fontWeight: "bold",
+              color: "#003366",
+              textShadow: "0 2px 8px #7FFFD4",
+            }}
           >
-            Logout
-          </button>
+            Welcome, {username}
+          </span>
         </div>
 
-        {/* Menu Items scrollable */}
-        <div className="flex-1 overflow-y-auto p-2">
-          <ul className="space-y-2">
+        {/* Menu */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "0.5rem",
+          }}
+        >
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {features.map((section, idx) => (
-              <li key={idx} className="relative">
+              <li key={idx} style={{ position: "relative" }}>
                 <div
-                  className="p-2 rounded hover:bg-blue-800 cursor-pointer font-semibold"
-                  onMouseEnter={() => setOpenSection(idx)}
-                  onMouseLeave={() => setOpenSection(null)}
+                  style={{
+                    ...menuTextStyle,
+                    padding: "0.75rem 1rem",
+                    borderRadius: "0.5rem",
+                    transition: "background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    setOpenSection(idx);
+                    e.currentTarget.style.backgroundColor = "#1e40af";
+                  }}
+                  onMouseLeave={(e) => {
+                    setOpenSection(null);
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
                 >
                   {section.title}
                 </div>
 
                 {openSection === idx && (
                   <div
-                    className="absolute left-full top-0 ml-2 bg-[#002244] p-3 rounded-lg shadow-xl w-52 z-50"
+                    style={{
+                      position: "fixed",
+                      left: "250px",
+                      top: `${80 + idx * 60}px`,
+                      backgroundColor: "#002244",
+                      borderRadius: "0.6rem",
+                      minWidth: "14rem",
+                      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)",
+                      zIndex: 50,
+                      paddingLeft: "0.5rem",
+                    }}
                     onMouseEnter={() => setOpenSection(idx)}
                     onMouseLeave={() => setOpenSection(null)}
                   >
                     {section.children.map((child, cIdx) => (
                       <div
                         key={cIdx}
-                        className="p-2 rounded hover:bg-blue-700 cursor-pointer"
-                        onClick={() => navigate(child.path)}
+                        style={{
+                          ...menuTextStyle,
+                          padding: "0.5rem 0.75rem",
+                          borderRadius: "0.4rem",
+                          transition: "background-color 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "#1d4ed8";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "transparent";
+                        }}
+                        onClick={() => handleNavigate(child.path)}
                       >
                         {child.title}
                       </div>
@@ -145,8 +291,60 @@ export default function Home() {
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
-      <div className="flex-1 relative"></div>
+      {/* Main Content */}
+      <div
+        style={{
+          flex: 1,
+          height: "100vh",
+          overflow: "auto",
+          position: "relative",
+        }}
+      >
+        {/* Logout Button */}
+        <div
+          style={{
+            position: "absolute",
+            top: "1rem",
+            right: "1rem",
+            zIndex: 10,
+          }}
+        >
+          <button
+            onClick={handleLogout}
+            style={{
+              ...menuTextStyle,
+              backgroundColor: "#003366",
+              padding: "0.5rem 1.5rem",
+              borderRadius: "0.5rem",
+              border: "none",
+              fontSize: "1rem",
+              transition: "background-color 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#1e40af";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#003366";
+            }}
+          >
+            Logout
+          </button>
+        </div>
+
+        {/* Content Area */}
+        <div
+          style={{
+            height: "100%",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "2rem",
+          }}
+        >
+          {renderContent()}
+        </div>
+      </div>
     </div>
   );
 }
