@@ -1,35 +1,34 @@
 import React, { useState } from "react";
-import 'bootstrap/dist/css/bootstrap.min.css';
+import "bootstrap/dist/css/bootstrap.min.css";
 
-const BookingForm = () => {
-  const [customerName, setCustomerName] = useState("");
-  const [roomType, setRoomType] = useState("Deluxe");
-  const [bookingDate, setBookingDate] = useState("");
-  const [loading, setLoading] = useState(false);
+const RoomTypes = () => {
+  const [roomType, setRoomType] = useState("");
+  const [Rate, setRate] = useState("");
+  const [Remarks, setRemarks] = useState("");
+  const [loading, setLoading] = useState(false); // ✅ FIXED (added missing loading state)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8080/api/bookings", {
+      const response = await fetch("http://localhost:8080/api/RoomTypes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          customerName,
           roomType,
-          bookingDate,
-          status: "CONFIRMED",
+          Rate,
+          Remarks,
         }),
       });
-      if (!response.ok) throw new Error("Failed to create booking");
-      
-      alert("Booking successful!");
-      setCustomerName("");
+
+      if (!response.ok) throw new Error("Failed to Add Rooms");
+
+      alert("Room added successfully!");
       setRoomType("");
-      setBookingDate("");
+      setRate("");
     } catch (error) {
       console.error(error);
-      alert("Error creating booking");
+      alert("Error adding Rooms");
     } finally {
       setLoading(false);
     }
@@ -47,7 +46,7 @@ const BookingForm = () => {
         WebkitBackdropFilter: "blur(20px)",
         borderRadius: "2rem",
         boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.13)",
-        border: "1px solid rgba(255,255,255,0.09)"
+        border: "1px solid rgba(255,255,255,0.09)",
       }}
     >
       <h1
@@ -56,55 +55,62 @@ const BookingForm = () => {
           fontSize: "2rem",
           fontWeight: "bold",
           color: "#003366a8",
-          textShadow: "0 2px 8px #7FFFD4"
+          textShadow: "0 2px 8px #7FFFD4",
         }}
         className="mb-4"
       >
-        Hotel Booking
+        Add Room Types
       </h1>
+
       <form onSubmit={handleSubmit}>
-        <div className="mb-3 text-start">
-          <label className="form-label fw-bold" style={{ color: "#003366" }}>
-            Customer Name
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Enter customer name"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            required
-          />
-        </div>
+        {/* ROOM TYPE */}
         <div className="mb-3 text-start">
           <label className="form-label fw-bold" style={{ color: "#003366" }}>
             Room Type
           </label>
-          <select
-            className="form-select"
+         <input
+            type="text"
+            className="form-control"
+            placeholder="Enter room type"
             value={roomType}
             onChange={(e) => setRoomType(e.target.value)}
-          >
-            <option value="disabled hidden">Select room type</option>
-            <option>Economy Double room</option>
-            <option>Studio room with balcony</option>
-            <option>Family Deluxe room</option>
-            <option>Family Deluxe room</option>
-            <option>Luxury Tripple room</option>
-          </select>
-        </div>
-        <div className="mb-3 text-start">
-          <label className="form-label fw-bold" style={{ color: "#003366" }}>
-            Booking Date & Time
-          </label>
-          <input
-            type="datetime-local"
-            className="form-control"
-            value={bookingDate}
-            onChange={(e) => setBookingDate(e.target.value)}
             required
           />
         </div>
+        <div className="mb-3 text-start">
+          <label className="form-label fw-bold" style={{ color: "#003366" }}>
+            Rate
+          </label>
+          <input
+    type="text"
+    className="form-control"
+    placeholder="Enter rate"
+    value={Rate}
+    onChange={(e) => {
+      const value = e.target.value;
+
+      // Allows numbers like: 100, 100.50, 0.99, .99
+      if (/^\d*\.?\d*$/.test(value)) {
+        setRate(value);
+      }
+    }}
+    required
+  />
+  </div>
+  <div className="mb-3 text-start">
+          <label className="form-label fw-bold" style={{ color: "#003366" }}>
+            Remarks
+          </label>
+         <input
+            type="text"
+            className="form-control"
+            placeholder="Enter remarks "
+            value={Remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+          />
+        </div>
+
+        {/* SUBMIT BUTTON */}
         <button
           type="submit"
           className="btn w-100"
@@ -115,15 +121,15 @@ const BookingForm = () => {
             fontWeight: "bold",
             fontSize: "1.12rem",
             letterSpacing: "0.02em",
-            boxShadow: "0 2px 8px rgba(0,50,100,0.13)"
+            boxShadow: "0 2px 8px rgba(0,50,100,0.13)",
           }}
           disabled={loading}
         >
-          {loading ? "Booking..." : "Book Now"}
+          {loading ? "Adding..." : "Add"}
         </button>
       </form>
     </div>
   );
 };
 
-export default BookingForm;
+export default RoomTypes;

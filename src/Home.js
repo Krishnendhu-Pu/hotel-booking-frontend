@@ -1,13 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import BookingForm from "./BookingForm";
 import PreviousBookings from "./PreviousBookings";
+import AddRooms from "./AddRooms";
+import RoomTypes from "./RoomTypes";
 
 export default function Home() {
   const navigate = useNavigate();
   const username = localStorage.getItem("username") || "Guest";
   const [openSection, setOpenSection] = useState(null);
   const [currentPage, setCurrentPage] = useState(null);
+  const menuRefs = useRef({});
 
   const features = [
     {
@@ -67,11 +70,12 @@ export default function Home() {
       ],
     },
     {
-      title: "Rooms Availability",
+      title: "Rooms Maintenance",
       children: [
         { title: "Check Availability", path: "/rooms/check" },
-        { title: "Block Rooms", path: "/rooms/block" },
-        { title: "Availability Report", path: "/rooms/report" },
+        { title: "Update Rooms", path: "/rooms/block" },
+        { title: "Add Rooms", path: "/rooms/AddRooms" },
+        { title: "Room Types", path: "/rooms/RoomTypes" },
       ],
     },
     {
@@ -100,6 +104,14 @@ export default function Home() {
 
   const handleNavigate = (path) => {
     setCurrentPage(path);
+  };
+
+  const getSubmenuPosition = (idx) => {
+    if (menuRefs.current[idx]) {
+      const rect = menuRefs.current[idx].getBoundingClientRect();
+      return rect.top;
+    }
+    return 0;
   };
 
   const renderContent = () => {
@@ -140,6 +152,11 @@ export default function Home() {
             Booking Summary - Coming Soon
           </div>
         );
+      case "/rooms/AddRooms":
+          return <AddRooms />
+
+      case "/rooms/RoomTypes":
+        return <RoomTypes/>    
       default:
         return (
           <div style={{ textAlign: "center" }}>
@@ -151,7 +168,7 @@ export default function Home() {
                 fontWeight: "bold",
               }}
             >
-              Welcome to Hotel Management System
+              Welcome to Hotel Management System 
             </h2>
             <p
               style={{
@@ -196,6 +213,8 @@ export default function Home() {
           display: "flex",
           flexDirection: "column",
           flexShrink: 0,
+          position: "relative",
+          zIndex: 1,
         }}
       >
         {/* Welcome */}
@@ -222,6 +241,7 @@ export default function Home() {
           style={{
             flex: 1,
             overflowY: "auto",
+            overflowX: "visible",
             padding: "0.5rem",
           }}
         >
@@ -229,6 +249,7 @@ export default function Home() {
             {features.map((section, idx) => (
               <li key={idx} style={{ position: "relative" }}>
                 <div
+                  ref={(el) => (menuRefs.current[idx] = el)}
                   style={{
                     ...menuTextStyle,
                     padding: "0.75rem 1rem",
@@ -240,7 +261,6 @@ export default function Home() {
                     e.currentTarget.style.backgroundColor = "#1e40af";
                   }}
                   onMouseLeave={(e) => {
-                    setOpenSection(null);
                     e.currentTarget.style.backgroundColor = "transparent";
                   }}
                 >
@@ -248,42 +268,57 @@ export default function Home() {
                 </div>
 
                 {openSection === idx && (
-                  <div
-                    style={{
-                      position: "fixed",
-                      left: "250px",
-                      top: `${80 + idx * 60}px`,
-                      backgroundColor: "#002244",
-                      borderRadius: "0.6rem",
-                      minWidth: "14rem",
-                      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)",
-                      zIndex: 50,
-                      paddingLeft: "0.5rem",
-                    }}
-                    onMouseEnter={() => setOpenSection(idx)}
-                    onMouseLeave={() => setOpenSection(null)}
-                  >
-                    {section.children.map((child, cIdx) => (
-                      <div
-                        key={cIdx}
-                        style={{
-                          ...menuTextStyle,
-                          padding: "0.5rem 0.75rem",
-                          borderRadius: "0.4rem",
-                          transition: "background-color 0.2s",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = "#1d4ed8";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = "transparent";
-                        }}
-                        onClick={() => handleNavigate(child.path)}
-                      >
-                        {child.title}
-                      </div>
-                    ))}
-                  </div>
+                  <React.Fragment>
+                    {/* Invisible bridge to prevent hover break */}
+                    <div
+                      style={{
+                        position: "fixed",
+                        left: "256px",
+                        top: `${getSubmenuPosition(idx)}px`,
+                        width: "20px",
+                        height: `${menuRefs.current[idx]?.offsetHeight || 50}px`,
+                        zIndex: 999,
+                      }}
+                      onMouseEnter={() => setOpenSection(idx)}
+                      onMouseLeave={() => setOpenSection(null)}
+                    />
+                    <div
+                      style={{
+                        position: "fixed",
+                        left: "264px",
+                        top: `${getSubmenuPosition(idx)}px`,
+                        backgroundColor: "#002244",
+                        borderRadius: "0.6rem",
+                        minWidth: "14rem",
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)",
+                        zIndex: 1000,
+                        padding: "0.5rem",
+                      }}
+                      onMouseEnter={() => setOpenSection(idx)}
+                      onMouseLeave={() => setOpenSection(null)}
+                    >
+                      {section.children.map((child, cIdx) => (
+                        <div
+                          key={cIdx}
+                          style={{
+                            ...menuTextStyle,
+                            padding: "0.5rem 0.75rem",
+                            borderRadius: "0.4rem",
+                            transition: "background-color 0.2s",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#1d4ed8";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                          }}
+                          onClick={() => handleNavigate(child.path)}
+                        >
+                          {child.title}
+                        </div>
+                      ))}
+                    </div>
+                  </React.Fragment>
                 )}
               </li>
             ))}
@@ -335,7 +370,7 @@ export default function Home() {
         <div
           style={{
             height: "100%",
-            width: "100%",
+            width: "80%",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
