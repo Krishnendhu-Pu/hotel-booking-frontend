@@ -4,7 +4,7 @@ import BookingForm from "./BookingForm";
 import PreviousBookings from "./PreviousBookings";
 import AddRooms from "./AddRooms";
 import RoomTypes from "./RoomTypes";
-import UpdateRooms from "./UpdateRooms";
+import UpdateRooms from "./UpdateRooms.js";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -76,7 +76,6 @@ export default function Home() {
         { title: "Check Availability", path: "/rooms/check" },
         { title: "Update Rooms", path: "/rooms/UpdateRooms" },
         { title: "Add Rooms", path: "/rooms/AddRooms" },
-        { title: "Room Types", path: "/rooms/RoomTypes" },
       ],
     },
     {
