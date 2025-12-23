@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import BookingForm from "./BookingForm";
 import PreviousBookings from "./PreviousBookings";
 import AddRooms from "./AddRooms";
-import RoomTypes from "./RoomTypes";
 import UpdateRooms from "./UpdateRooms.js";
 
 export default function Home() {
@@ -154,9 +153,7 @@ export default function Home() {
         );
       case "/rooms/AddRooms":
           return <AddRooms />
-
-      case "/rooms/RoomTypes":
-        return <RoomTypes/>   
+ 
         
       case "/rooms/UpdateRooms":
         return <UpdateRooms/>

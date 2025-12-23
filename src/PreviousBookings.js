@@ -459,7 +459,7 @@ const PreviousBookings = () => {
 
             <table
               style={{
-                width: "100%",
+                width: "130%",
                 marginTop: "1rem",
                 borderCollapse: "collapse",
               }}
@@ -475,7 +475,7 @@ const PreviousBookings = () => {
                 </tr>
               </thead>
 
-              <tbody style={{ color: "#85afdaff", background: "rgba(255,255,255,0.09)",textShadow: "0 2px 8px #0d2250ff" }}>
+              <tbody style={{ color: "#fefefaff", background: "rgba(255,255,255,0.09)",textShadow: "0 2px 8px #0d2250ff" }}>
                 {currentBookings.map((b) => (
                   <tr key={b.id}>
                     <td style={{ textAlign: "center" }}>
