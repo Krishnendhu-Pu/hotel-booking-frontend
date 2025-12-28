@@ -78,7 +78,14 @@ const AddRoomTypesAndRooms = () => {
             className="form-control"
             placeholder="Enter room type"
             value={roomType}
-            onChange={(e) => setRoomType(e.target.value)}
+            onChange={(e) => {
+    const value = e.target.value;
+    if (value.length === 0) {
+      setRoomType("");
+    } else {
+      setRoomType(value.charAt(0).toUpperCase() + value.slice(1));
+    }
+  }}
             required
           />
         </div>

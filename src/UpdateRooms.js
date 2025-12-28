@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const UpdateRooms = () => {
@@ -42,11 +42,11 @@ const UpdateRooms = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:8080/api/bookings/rooms/${selectedRoomId}`,
+        `http://localhost:8081/api/rooms/${selectedRoomId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rate, remarks, noOfRooms }),
+          body: JSON.stringify({ roomType, rate, remarks, noOfRooms }),
         }
       );
 
@@ -73,7 +73,7 @@ const UpdateRooms = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/api/bookings/rooms/${selectedRoomId}`,
+        `http://localhost:8081/api/rooms/${selectedRoomId}`,
         { method: "DELETE" }
       );
 
@@ -168,7 +168,7 @@ const UpdateRooms = () => {
             type="text"
             className="form-control form-control-sm"
             value={roomType}
-            disabled
+            onChange={(e) => setRoomType(e.target.value)}
           />
         </div>
 

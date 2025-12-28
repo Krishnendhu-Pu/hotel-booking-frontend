@@ -1,15 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const BookingForm = () => {
   const [customerName, setCustomerName] = useState("");
-  const [roomType, setRoomType] = useState("Deluxe");
+  const [roomType, setRoomType] = useState("");
   const [bookingDate, setBookingDate] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // ✅ room types list (only strings)
+  const [roomTypes, setRoomTypes] = useState([]);
+
+  // ✅ fetch full room list but extract ONLY roomType
+  useEffect(() => {
+    fetch("http://localhost:8080/api/bookings/roomslist")
+      .then((res) => res.json())
+      .then((data) => {
+        // extract roomType only
+        const types = data.map((room) => room.roomType);
+        setRoomTypes(types);
+      })
+      .catch((err) => console.error("Error fetching room types", err));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
       const response = await fetch("http://localhost:8080/api/bookings", {
         method: "POST",
@@ -21,8 +37,9 @@ const BookingForm = () => {
           status: "CONFIRMED",
         }),
       });
+
       if (!response.ok) throw new Error("Failed to create booking");
-      
+
       alert("Booking successful!");
       setCustomerName("");
       setRoomType("");
@@ -62,6 +79,7 @@ const BookingForm = () => {
       >
         Hotel Booking
       </h1>
+
       <form onSubmit={handleSubmit}>
         <div className="mb-3 text-start">
           <label className="form-label fw-bold" style={{ color: "#003366" }}>
@@ -76,6 +94,7 @@ const BookingForm = () => {
             required
           />
         </div>
+
         <div className="mb-3 text-start">
           <label className="form-label fw-bold" style={{ color: "#003366" }}>
             Room Type
@@ -84,15 +103,19 @@ const BookingForm = () => {
             className="form-select"
             value={roomType}
             onChange={(e) => setRoomType(e.target.value)}
+            required
           >
-            <option value="disabled hidden">Select room type</option>
-            <option>Economy Double room</option>
-            <option>Studio room with balcony</option>
-            <option>Family Deluxe room</option>
-            <option>Family Deluxe room</option>
-            <option>Luxury Tripple room</option>
+            <option value="">Select room type</option>
+
+            {/* ✅ display only roomType */}
+            {roomTypes.map((type, index) => (
+              <option key={index} value={type}>
+                {type}
+              </option>
+            ))}
           </select>
         </div>
+
         <div className="mb-3 text-start">
           <label className="form-label fw-bold" style={{ color: "#003366" }}>
             Booking Date & Time
@@ -105,6 +128,7 @@ const BookingForm = () => {
             required
           />
         </div>
+
         <button
           type="submit"
           className="btn w-100"

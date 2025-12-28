@@ -11,6 +11,7 @@ const PreviousBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [roomTypes, setRoomTypes] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -26,7 +27,16 @@ const PreviousBookings = () => {
     status: "CONFIRMED",
   });
 
-  useEffect(() => {}, []);
+ useEffect(() => {
+    fetch("http://localhost:8080/api/bookings/roomslist")
+      .then((res) => res.json())
+      .then((data) => {
+        const types = data.map((room) => room.roomType);
+        setRoomTypes(types);
+      })
+      .catch((err) => console.error("Error fetching room types", err));
+  }, []);
+
 
   const handleSearch = async () => {
     setEditingBooking(null);
@@ -362,11 +372,17 @@ const PreviousBookings = () => {
         {editingBooking && (
           <div
             style={{
-              marginTop: "1rem",
-              padding: "1rem",
-              background: "#f3f4f6",
-              borderRadius: 8,
-            }}
+        maxWidth: "900px",
+        width: "100%",
+        background: "rgba(169, 155, 246, 0.09)",
+        backdropFilter: "blur(20px)",
+        borderRadius: "2rem",
+        border: "1px solid rgba(255,255,255,0.09)",
+        fontWeight: "bold",
+          color: "#003366",
+          textShadow: "0 2px 8px #7FFFD4",
+      }}
+    
           >
             <h3>Edit Booking (ID: {editingBooking.id})</h3>
 
@@ -377,21 +393,36 @@ const PreviousBookings = () => {
                 onChange={(e) =>
                   setEditForm({ ...editForm, customerName: e.target.value })
                 }
+                style={{
+          padding: "0.5rem",
+          flex: 1,
+          border: "1px solid #8ab4f3ff",
+          borderRadius: "4px",
+          fontSize: "14px",
+        }}
                 required
               />
               <select
-                name="roomType"
-                value={editForm.roomType}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, roomType: e.target.value })
-                }
-              >
-                <option>Economy Double room</option>
-            <option>Studio room with balcony</option>
-            <option>Family Deluxe room</option>
-            <option>Family Deluxe room</option>
-            <option>Luxury Tripple room</option>
-              </select>
+              value={editForm.roomType}
+              onChange={(e) =>
+                setEditForm({ ...editForm, roomType: e.target.value })
+              }
+              style={{
+          padding: "0.5rem",
+          flex: 1,
+          border: "1px solid #8ab4f3ff",
+          borderRadius: "4px",
+          fontSize: "14px",
+        }}
+            >
+              <option value="">Select room type</option>
+              {roomTypes.map((type, index) => (
+                <option key={index} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+              
               <input
                 type="datetime-local"
                 name="bookingDate"
@@ -399,6 +430,13 @@ const PreviousBookings = () => {
                 onChange={(e) =>
                   setEditForm({ ...editForm, bookingDate: e.target.value })
                 }
+                style={{
+          padding: "0.5rem",
+          flex: 1,
+          border: "1px solid #8ab4f3ff",
+          borderRadius: "4px",
+          fontSize: "14px",
+        }}
                 required
               />
 
@@ -408,19 +446,50 @@ const PreviousBookings = () => {
                 onChange={(e) =>
                   setEditForm({ ...editForm, status: e.target.value })
                 }
+                style={{
+          padding: "0.5rem",
+          flex: 1,
+          border: "1px solid #8ab4f3ff",
+          borderRadius: "4px",
+          fontSize: "14px",
+        }}
               >
                 <option value="CONFIRMED">CONFIRMED</option>
                 <option value="CANCELLED">CANCELLED</option>
                 <option value="PENDING">PENDING</option>
+                
               </select>
 
-              <button type="submit" style={{ marginTop: 8 }}>
+              <button type="submit" style={{
+      marginTop: 8,
+      background: "#003366",
+      color: "white",
+      padding: "0.5rem 1.5rem",
+      width: "100px",
+      border: "none",
+      cursor: "pointer",
+      borderRadius: "4px",
+      fontSize: "14px",
+      fontWeight: "500",
+    }}>
+                
                 Save
               </button>
               <button
                 type="button"
                 onClick={() => setEditingBooking(null)}
-                style={{ marginLeft: 8 }}
+                style={{
+      marginTop: 8,
+      background: "#ae17a4ff",
+      color: "white",
+      padding: "0.5rem 1.5rem",
+      width: "100px",
+      border: "none",
+      cursor: "pointer",
+      borderRadius: "4px",
+      fontSize: "14px",
+      fontWeight: "500",
+    }}
               >
                 Cancel
               </button>
