@@ -1,150 +1,363 @@
 import React, { useState, useEffect } from "react";
-import 'bootstrap/dist/css/bootstrap.min.css';
+import "bootstrap/dist/css/bootstrap.min.css";
+
+/* GLOBAL TEXT STYLE */
+const textStyle = {
+  whiteSpace: "nowrap",
+  color: "#85afdaff",
+  textShadow: "0 2px 8px #032c1eff",
+  fontWeight: "bold",
+  cursor: "pointer",
+};
+
+const glassInput = {
+  background: "rgba(169, 155, 246, 0.09)",
+  backdropFilter: "blur(20px)",
+  borderRadius: "2rem",
+  border: "1px solid rgba(255,255,255,0.09)",
+  color: "#003366",
+  width: "100%",
+  padding: "0.375rem 0.75rem",
+};
+
+const fieldStyle = {
+  background: "rgba(255,255,255,0.09)",
+  backdropFilter: "blur(20px)",
+  borderRadius: "2rem",
+  border: "1px solid rgba(255,255,255,0.09)",
+  color: "#003366",
+  width: "100%",
+  padding: "0.375rem 0.75rem",
+};
 
 const BookingForm = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  /* STATES */
   const [customerName, setCustomerName] = useState("");
-  const [roomType, setRoomType] = useState("");
-  const [bookingDate, setBookingDate] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [pax, setPax] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
 
-  // ✅ room types list (only strings)
-  const [roomTypes, setRoomTypes] = useState([]);
+  const [roomList, setRoomList] = useState([]);
+  const [rooms, setRooms] = useState([
+    { roomType: "", noOfRooms: 1, extraBed: 0, ac: true, rate: 0 },
+  ]);
 
-  // ✅ fetch full room list but extract ONLY roomType
+  const [advance, setAdvance] = useState(0);
+  const [advanceMode, setAdvanceMode] = useState("");
+  const [kitchenRent, setKitchenRent] = useState(0);
+  const [discount, setDiscount] = useState(0);
+  const [gst, setGst] = useState(false);
+  const [remarks, setRemarks] = useState("");
+
+  const [total, setTotal] = useState(0);
+  const [balance, setBalance] = useState(0);
+
+  /* FETCH ROOMS */
   useEffect(() => {
     fetch("http://localhost:8080/api/bookings/roomslist")
       .then((res) => res.json())
-      .then((data) => {
-        // extract roomType only
-        const types = data.map((room) => room.roomType);
-        setRoomTypes(types);
-      })
-      .catch((err) => console.error("Error fetching room types", err));
+      .then((data) => setRoomList(data));
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  /* CALCULATE TOTAL BASED ON ROOMS AND DATES */
+  useEffect(() => {
+    let roomTotal = 0;
 
-    try {
-      const response = await fetch("http://localhost:8080/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerName,
-          roomType,
-          bookingDate,
-          status: "CONFIRMED",
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to create booking");
-
-      alert("Booking successful!");
-      setCustomerName("");
-      setRoomType("");
-      setBookingDate("");
-    } catch (error) {
-      console.error(error);
-      alert("Error creating booking");
-    } finally {
-      setLoading(false);
+    // Calculate number of nights
+    let nights = 1;
+    if (checkIn && checkOut) {
+      const inDate = new Date(checkIn);
+      const outDate = new Date(checkOut);
+      const diffTime = outDate - inDate;
+      nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (nights < 1) nights = 1; // Minimum 1 night
     }
+
+    rooms.forEach((r) => {
+      roomTotal += r.rate * r.noOfRooms * nights;
+      roomTotal += r.extraBed * 500 * nights; // Extra bed charge per night
+    });
+
+    let t = roomTotal + Number(kitchenRent) - Number(discount);
+    if (gst) t += t * 0.12;
+
+    setTotal(t);
+    setBalance(t - advance);
+  }, [rooms, kitchenRent, discount, gst, advance, checkIn, checkOut]);
+
+  const addRoomRow = () => {
+    setRooms([
+      ...rooms,
+      { roomType: "", noOfRooms: 1, extraBed: 0, ac: true, rate: 0 },
+    ]);
+  };
+
+  const removeRoomRow = () => {
+    if (rooms.length > 1) setRooms(rooms.slice(0, -1));
+  };
+
+  const updateRoom = (i, key, value) => {
+    const updated = [...rooms];
+    updated[i][key] = value;
+
+    if (key === "roomType") {
+      const selected = roomList.find((r) => r.roomType === value);
+      if (selected) updated[i].rate = selected.rate; // Update rate automatically
+    }
+    setRooms(updated);
   };
 
   return (
-    <div
-      className="card p-5 shadow-lg text-center"
-      style={{
-        maxWidth: "500px",
-        width: "100%",
-        minHeight: "24rem",
-        background: "rgba(255,255,255,0.09)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderRadius: "2rem",
-        boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.13)",
-        border: "1px solid rgba(255,255,255,0.09)"
-      }}
-    >
-      <h1
-        style={{
-          whiteSpace: "nowrap",
-          fontSize: "2rem",
-          fontWeight: "bold",
-          color: "#003366a8",
-          textShadow: "0 2px 8px #7FFFD4"
-        }}
-        className="mb-4"
-      >
-        Hotel Booking
-      </h1>
+    <div style={{ height: "100vh", overflowY: "auto", padding: "1rem" }}>
+      <form className="container-fluid">
+        {/* GUEST DETAILS */}
+        <h4 style={textStyle}>Guest Details</h4>
+        <div className="row mb-3">
+          <div className="col-md-6">
+            <label style={textStyle}>Name</label>
+            <input
+              style={fieldStyle}
+              className="form-control"
+              placeholder="Enter Name"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+            />
+          </div>
+          <div className="col-md-6">
+            <label style={textStyle}>Pax</label>
+            <input
+              style={fieldStyle}
+              className="form-control"
+              type="number"
+              placeholder="Enter Pax"
+              value={pax}
+              onChange={(e) => setPax(e.target.value)}
+            />
+          </div>
+        </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3 text-start">
-          <label className="form-label fw-bold" style={{ color: "#003366" }}>
-            Customer Name
-          </label>
+        <div className="row mb-4">
+          <div className="col-md-6">
+            <label style={textStyle}>Mobile</label>
+            <input
+              style={fieldStyle}
+              className="form-control"
+              placeholder="Enter Mobile"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
+            />
+          </div>
+          <div className="col-md-3">
+            <label style={textStyle}>Check-In</label>
+            <input
+              style={fieldStyle}
+              className="form-control"
+              type="datetime-local"
+              value={checkIn}
+              onChange={(e) => setCheckIn(e.target.value)}
+            />
+          </div>
+          <div className="col-md-3">
+            <label style={textStyle}>Check-Out</label>
+            <input
+              style={fieldStyle}
+              className="form-control"
+              type="datetime-local"
+              value={checkOut}
+              onChange={(e) => setCheckOut(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* ROOM HEADER */}
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <h4 style={textStyle}>Room Details</h4>
+          <div>
+            <button
+              type="button"
+              className="btn btn-sm btn-success me-2"
+              onClick={addRoomRow}
+            >
+              +
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-danger"
+              onClick={removeRoomRow}
+              disabled={rooms.length === 1}
+            >
+              −
+            </button>
+          </div>
+        </div>
+
+        {/* ROOM DETAILS TABLE */}
+        <div className="table-responsive mb-4">
+          <table style={{ width: "100%", marginTop: "1rem" }}>
+            <thead>
+              <tr style={{ background: "#003366", color: "white" }}>
+                <th>Room Type</th>
+                <th>No Of Rooms</th>
+                <th>Extra Bed</th>
+                <th style={{ paddingRight: "2rem" }}>AC</th>
+                <th>Rate</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {rooms.map((r, i) => (
+                <tr key={i} style={{ color: "#003366" }}>
+                  <td>
+                    
+                    <select
+                      className="form-select"
+                      style={glassInput}
+                      value={r.roomType}
+                      onChange={(e) =>
+                        updateRoom(i, "roomType", e.target.value)
+                      }
+                    >
+                      <option value="">Select</option>
+                      {roomList.map((rt) => (
+                        <option key={rt.id} value={rt.roomType}>
+                          {rt.roomType}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+
+                  <td>
+                    
+                    <input
+                      type="number"
+                      className="form-control"
+                      style={glassInput}
+                      value={r.noOfRooms}
+                      onChange={(e) =>
+                        updateRoom(i, "noOfRooms", +e.target.value)
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    
+                    <input
+                      type="number"
+                      className="form-control"
+                      style={glassInput}
+                      value={r.extraBed}
+                      onChange={(e) =>
+                        updateRoom(i, "extraBed", +e.target.value)
+                      }
+                    />
+                  </td>
+
+                  <td className="text-center" style={{ paddingRight: "2rem" }}>
+                    
+                    <input
+                      type="checkbox"
+                      checked={r.ac}
+                      onChange={(e) => updateRoom(i, "ac", e.target.checked)}
+                    />
+                  </td>
+
+                  <td>
+                    
+                    <input
+                      type="number"
+                      className="form-control"
+                      style={glassInput}
+                      value={r.rate}
+                      onChange={(e) => updateRoom(i, "rate", +e.target.value)}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* PAYMENTS */}
+        <h4 style={textStyle}>Payments</h4>
+        <div className="row mb-3">
+          <div className="col-md-6">
+            <label style={textStyle}>Advance</label>
+            <input
+              style={fieldStyle}
+              className="form-control"
+              type="number"
+              value={advance}
+              placeholder="Enter Advance"
+              onChange={(e) => setAdvance(+e.target.value)}
+            />
+          </div>
+          <div className="col-md-6">
+            <label style={textStyle}>Advance Mode</label>
+            <input
+              style={fieldStyle}
+              className="form-control"
+              value={advanceMode}
+              placeholder="Enter Mode"
+              onChange={(e) => setAdvanceMode(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="row mb-3">
+          <div className="col-md-6">
+            <label style={textStyle}>Kitchen Rent</label>
+            <input
+              style={fieldStyle}
+              className="form-control"
+              type="number"
+              value={kitchenRent}
+              placeholder="Enter Kitchen Rent"
+              onChange={(e) => setKitchenRent(+e.target.value)}
+            />
+          </div>
+          <div className="col-md-6">
+            <label style={textStyle}>Discount</label>
+            <input
+              style={fieldStyle}
+              className="form-control"
+              type="number"
+              value={discount}
+              placeholder="Enter Discount"
+              onChange={(e) => setDiscount(+e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="form-check mb-3">
           <input
-            type="text"
-            className="form-control"
-            placeholder="Enter customer name"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            required
+            className="form-check-input"
+            type="checkbox"
+            checked={gst}
+            onChange={(e) => setGst(e.target.checked)}
           />
-        </div>
-
-        <div className="mb-3 text-start">
-          <label className="form-label fw-bold" style={{ color: "#003366" }}>
-            Room Type
+          <label style={textStyle} className="form-check-label">
+            GST
           </label>
-          <select
-            className="form-select"
-            value={roomType}
-            onChange={(e) => setRoomType(e.target.value)}
-            required
-          >
-            <option value="">Select room type</option>
-
-            {/* ✅ display only roomType */}
-            {roomTypes.map((type, index) => (
-              <option key={index} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
         </div>
 
-        <div className="mb-3 text-start">
-          <label className="form-label fw-bold" style={{ color: "#003366" }}>
-            Booking Date & Time
-          </label>
-          <input
-            type="datetime-local"
-            className="form-control"
-            value={bookingDate}
-            onChange={(e) => setBookingDate(e.target.value)}
-            required
-          />
-        </div>
+        <label style={textStyle}>Remarks</label>
+        <textarea
+          style={fieldStyle}
+          className="form-control mb-3"
+          value={remarks}
+          placeholder="Enter Remarks"
+          onChange={(e) => setRemarks(e.target.value)}
+        />
 
-        <button
-          type="submit"
-          className="btn w-100"
-          style={{
-            backgroundColor: "rgb(0,50,100)",
-            color: "white",
-            border: "none",
-            fontWeight: "bold",
-            fontSize: "1.12rem",
-            letterSpacing: "0.02em",
-            boxShadow: "0 2px 8px rgba(0,50,100,0.13)"
-          }}
-          disabled={loading}
-        >
-          {loading ? "Booking..." : "Book Now"}
-        </button>
+        <h5 style={textStyle}>Total: ₹{total}</h5>
+        <h5 style={textStyle}>Balance: ₹{balance}</h5>
+
+        <button className="btn btn-primary mt-3">Save Booking</button>
       </form>
     </div>
   );
