@@ -4,6 +4,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 const AddRoomTypesAndRooms = () => {
   const [roomType, setRoomType] = useState("");
   const [rate, setRate] = useState("");
+  const [gstPercent, setGstPercent] = useState("");
+  const [acRate, setAcRate] = useState("");
+  const [extraBedFee, setExtraBedFee] = useState("");
   const [remarks, setRemarks] = useState("");
   const [noOfRooms, setNoOfRooms] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,6 +22,9 @@ const AddRoomTypesAndRooms = () => {
         body: JSON.stringify({
           roomType,
           rate,
+          gstPercent,
+          acRate,
+          extraBedFee,
           remarks,
           noOfRooms,
         }),
@@ -29,6 +35,9 @@ const AddRoomTypesAndRooms = () => {
       alert("Details added successfully!");
       setRoomType("");
       setRate("");
+      setGstPercent("");
+      setAcRate("");
+      setExtraBedFee("");
       setRemarks("");
       setNoOfRooms("");
     } catch (error) {
@@ -79,21 +88,21 @@ const AddRoomTypesAndRooms = () => {
             placeholder="Enter room type"
             value={roomType}
             onChange={(e) => {
-    const value = e.target.value;
-    if (value.length === 0) {
-      setRoomType("");
-    } else {
-      setRoomType(value.charAt(0).toUpperCase() + value.slice(1));
-    }
-  }}
+              const value = e.target.value;
+              if (value.length === 0) {
+                setRoomType("");
+              } else {
+                setRoomType(value.charAt(0).toUpperCase() + value.slice(1));
+              }
+            }}
             required
           />
         </div>
 
-        {/* RATE */}
+        {/* BASE RATE */}
         <div className="mb-3 text-start">
           <label className="form-label fw-bold" style={{ color: "#003366" }}>
-            Rate
+            Base Rate
           </label>
           <input
             type="text"
@@ -110,6 +119,85 @@ const AddRoomTypesAndRooms = () => {
           />
         </div>
 
+        {/* GST % + AC RATE (SAME LINE) */}
+        <div className="row mb-3 text-start">
+          <div className="col-md-6">
+            <label className="form-label fw-bold" style={{ color: "#003366" }}>
+              GST %
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="GST %"
+              value={gstPercent}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^\d*\.?\d*$/.test(value)) {
+                  setGstPercent(value);
+                }
+              }}
+            />
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label fw-bold" style={{ color: "#003366" }}>
+              AC Rent (if AC)
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="AC rent"
+              value={acRate}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^\d*\.?\d*$/.test(value)) {
+                  setAcRate(value);
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        {/* EXTRA BED + NO OF ROOMS (SAME LINE) */}
+        <div className="row mb-3 text-start">
+          <div className="col-md-6">
+            <label className="form-label fw-bold" style={{ color: "#003366" }}>
+              Extra Bed Fee
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Extra bed fee"
+              value={extraBedFee}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^\d*\.?\d*$/.test(value)) {
+                  setExtraBedFee(value);
+                }
+              }}
+            />
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label fw-bold" style={{ color: "#003366" }}>
+              No Of Rooms
+            </label>
+            <input
+              type="number"
+              className="form-control"
+              placeholder="Rooms count"
+              value={noOfRooms}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^\d*$/.test(value)) {
+                  setNoOfRooms(value);
+                }
+              }}
+              required
+            />
+          </div>
+        </div>
+
         {/* REMARKS */}
         <div className="mb-3 text-start">
           <label className="form-label fw-bold" style={{ color: "#003366" }}>
@@ -124,27 +212,7 @@ const AddRoomTypesAndRooms = () => {
           />
         </div>
 
-        {/* NO OF ROOMS */}
-        <div className="mb-3 text-start">
-          <label className="form-label fw-bold" style={{ color: "#003366" }}>
-            No Of Rooms
-          </label>
-          <input
-            type="number"
-            className="form-control"
-            placeholder="Number of rooms"
-            value={noOfRooms}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (/^\d*$/.test(value)) {
-                setNoOfRooms(value);
-              }
-            }}
-            required
-          />
-        </div>
-
-        {/* SUBMIT BUTTON */}
+        {/* SUBMIT */}
         <button
           type="submit"
           className="btn w-100"

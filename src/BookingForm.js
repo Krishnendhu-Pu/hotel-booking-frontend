@@ -1,34 +1,51 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+/* 🎨 COLOR PALETTE */
+const labelColor = "#b7c9f2";        // light pastel blue
+const inputTextColor = "#e6ecff";    // matching light text
+const placeholderColor = "#9fb3e0";
 
-/* GLOBAL TEXT STYLE */
+/* GLOBAL TEXT STYLE (LABELS & HEADERS) */
 const textStyle = {
   whiteSpace: "nowrap",
-  color: "#85afdaff",
-  textShadow: "0 2px 8px #032c1eff",
-  fontWeight: "bold",
-  cursor: "pointer",
+  color: labelColor,
+  textShadow: "0 1px 6px rgba(0,0,0,0.4)",
+  fontWeight: "600",
 };
 
+/* GLASS INPUT STYLE (TABLE) */
 const glassInput = {
   background: "rgba(169, 155, 246, 0.09)",
   backdropFilter: "blur(20px)",
   borderRadius: "2rem",
-  border: "1px solid rgba(255,255,255,0.09)",
-  color: "#003366",
+  border: "1px solid rgba(255,255,255,0.12)",
+  color: inputTextColor,
   width: "100%",
   padding: "0.375rem 0.75rem",
 };
 
+/* NORMAL INPUT STYLE */
 const fieldStyle = {
   background: "rgba(255,255,255,0.09)",
   backdropFilter: "blur(20px)",
   borderRadius: "2rem",
-  border: "1px solid rgba(255,255,255,0.09)",
-  color: "#003366",
+  border: "1px solid rgba(255,255,255,0.12)",
+  color: inputTextColor,
   width: "100%",
   padding: "0.375rem 0.75rem",
 };
+/* PLACEHOLDER STYLE */
+const inputPlaceholderStyle = `
+  ::placeholder {
+    color: ${placeholderColor};
+    opacity: 0.8;
+  }
+
+  select option {
+    background: rgba(20, 30, 60, 0.95);
+    color: ${inputTextColor};
+  }
+`;
 
 const BookingForm = () => {
   useEffect(() => {
@@ -41,16 +58,17 @@ const BookingForm = () => {
   const [mobile, setMobile] = useState("");
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+  const [gstAmount, setGstAmount] = useState(0);
 
   const [roomList, setRoomList] = useState([]);
   const [rooms, setRooms] = useState([
     { roomType: "", noOfRooms: 1, extraBed: 0, ac: true, rate: 0 },
   ]);
 
-  const [advance, setAdvance] = useState(0);
+  const [advance, setAdvance] = useState("");
   const [advanceMode, setAdvanceMode] = useState("");
-  const [kitchenRent, setKitchenRent] = useState(0);
-  const [discount, setDiscount] = useState(0);
+  const [kitchenRent, setKitchenRent] = useState("");
+  const [discount, setDiscount] = useState("");
   const [gst, setGst] = useState(false);
   const [remarks, setRemarks] = useState("");
 
@@ -85,7 +103,9 @@ const BookingForm = () => {
 
     let t = roomTotal + Number(kitchenRent) - Number(discount);
     if (gst) t += t * 0.12;
+    const gstVal = gst ? t * 0.12 : 0;
 
+    setGstAmount(gstVal);
     setTotal(t);
     setBalance(t - advance);
   }, [rooms, kitchenRent, discount, gst, advance, checkIn, checkOut]);
@@ -105,15 +125,20 @@ const BookingForm = () => {
     const updated = [...rooms];
     updated[i][key] = value;
 
-    if (key === "roomType") {
-      const selected = roomList.find((r) => r.roomType === value);
-      if (selected) updated[i].rate = selected.rate; // Update rate automatically
+   if (key === "roomType") {
+      if (value === "") {
+        updated[i].rate = 0;
+      } else {
+        const selected = roomList.find((r) => r.roomType === value);
+        if (selected) updated[i].rate = selected.rate;
+      }
     }
     setRooms(updated);
   };
 
   return (
     <div style={{ height: "100vh", overflowY: "auto", padding: "1rem" }}>
+      <style>{inputPlaceholderStyle}</style>
       <form className="container-fluid">
         {/* GUEST DETAILS */}
         <h4 style={textStyle}>Guest Details</h4>
@@ -290,7 +315,7 @@ const BookingForm = () => {
             <input
               style={fieldStyle}
               className="form-control"
-              type="number"
+              type="numeric"
               value={advance}
               placeholder="Enter Advance"
               onChange={(e) => setAdvance(+e.target.value)}
@@ -314,7 +339,7 @@ const BookingForm = () => {
             <input
               style={fieldStyle}
               className="form-control"
-              type="number"
+              type="numeric"
               value={kitchenRent}
               placeholder="Enter Kitchen Rent"
               onChange={(e) => setKitchenRent(+e.target.value)}
@@ -325,7 +350,7 @@ const BookingForm = () => {
             <input
               style={fieldStyle}
               className="form-control"
-              type="number"
+              type="numeric"
               value={discount}
               placeholder="Enter Discount"
               onChange={(e) => setDiscount(+e.target.value)}
@@ -333,17 +358,34 @@ const BookingForm = () => {
           </div>
         </div>
 
-        <div className="form-check mb-3">
-          <input
-            className="form-check-input"
-            type="checkbox"
-            checked={gst}
-            onChange={(e) => setGst(e.target.checked)}
-          />
-          <label style={textStyle} className="form-check-label">
-            GST
-          </label>
-        </div>
+      {/* ✅ GST + GST AMOUNT (SAME LINE) */}
+<div className="row mb-3 align-items-center">
+  {/* GST Checkbox */}
+  <div className="col-md-3">
+    <div className="form-check">
+      <input
+        className="form-check-input"
+        type="checkbox"
+        checked={gst}
+        onChange={(e) => setGst(e.target.checked)}
+      />
+      <label style={textStyle} className="form-check-label">
+        GST
+      </label>
+    </div>
+  </div>
+
+  {/* GST Amount */}
+  <div className="col-md-3">
+    <label style={textStyle}>GST Amount</label>
+    <input
+      style={fieldStyle}
+      className="form-control"
+      value={gst ? gstAmount.toFixed(2) : ""}
+      disabled
+    />
+  </div>
+</div>
 
         <label style={textStyle}>Remarks</label>
         <textarea
