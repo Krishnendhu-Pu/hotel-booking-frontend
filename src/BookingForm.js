@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+
 /* 🎨 COLOR PALETTE */
-const labelColor = "#b7c9f2";        // light pastel blue
-const inputTextColor = "#e6ecff";    // matching light text
+const labelColor = "#b7c9f2";
+const inputTextColor = "#e6ecff";
 const placeholderColor = "#9fb3e0";
 
 /* GLOBAL TEXT STYLE (LABELS & HEADERS) */
@@ -34,23 +35,15 @@ const fieldStyle = {
   width: "100%",
   padding: "0.375rem 0.75rem",
 };
+
 /* PLACEHOLDER STYLE */
 const inputPlaceholderStyle = `
-  ::placeholder {
-    color: ${placeholderColor};
-    opacity: 0.8;
-  }
-
-  select option {
-    background: rgba(20, 30, 60, 0.95);
-    color: ${inputTextColor};
-  }
+  ::placeholder { color: ${placeholderColor}; opacity: 0.8; }
+  select option { background: rgba(20, 30, 60, 0.95); color: ${inputTextColor}; }
 `;
 
 const BookingForm = () => {
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   /* STATES */
   const [customerName, setCustomerName] = useState("");
@@ -62,7 +55,7 @@ const BookingForm = () => {
 
   const [roomList, setRoomList] = useState([]);
   const [rooms, setRooms] = useState([
-    { roomType: "", noOfRooms: 1, extraBed: 0, ac: true, rate: 0 },
+    { roomType: "", noOfRooms: 1, extraBed: 0, ac: true, rate: 0, gstPercent: 0, acRate: 0, extraBedFee: 0 },
   ]);
 
   const [advance, setAdvance] = useState("");
@@ -75,45 +68,66 @@ const BookingForm = () => {
   const [total, setTotal] = useState(0);
   const [balance, setBalance] = useState(0);
 
-  /* FETCH ROOMS */
+  /* FETCH ROOMS FROM API */
   useEffect(() => {
     fetch("http://localhost:8080/api/bookings/roomslist")
       .then((res) => res.json())
       .then((data) => setRoomList(data));
   }, []);
 
-  /* CALCULATE TOTAL BASED ON ROOMS AND DATES */
+  /* CALCULATE TOTAL BASED ON ROOMS, AC, EXTRA BED, GST, AND DATES */
   useEffect(() => {
     let roomTotal = 0;
 
-    // Calculate number of nights
     let nights = 1;
     if (checkIn && checkOut) {
       const inDate = new Date(checkIn);
       const outDate = new Date(checkOut);
       const diffTime = outDate - inDate;
       nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (nights < 1) nights = 1; // Minimum 1 night
+      if (nights < 1) nights = 1;
     }
 
     rooms.forEach((r) => {
-      roomTotal += r.rate * r.noOfRooms * nights;
-      roomTotal += r.extraBed * 500 * nights; // Extra bed charge per night
+      let effectiveRate = r.rate;
+
+      // If AC selected, add AC rate
+      if (r.ac && r.acRate) {
+        effectiveRate += r.acRate;
+      }
+
+      roomTotal += effectiveRate * r.noOfRooms * nights;
+
+      // Extra bed charge
+      if (r.extraBedFee) {
+        roomTotal += r.extraBed * r.extraBedFee * nights;
+      }
     });
 
-    let t = roomTotal + Number(kitchenRent) - Number(discount);
-    if (gst) t += t * 0.12;
-    const gstVal = gst ? t * 0.12 : 0;
+    let t = roomTotal + Number(kitchenRent || 0) - Number(discount || 0);
+
+    let gstVal = 0;
+    if (gst) {
+      // Calculate GST per room
+      rooms.forEach((r) => {
+        const rateWithAc = r.rate + (r.ac && r.acRate ? r.acRate : 0);
+        gstVal += rateWithAc * r.noOfRooms * (r.gstPercent || 0) / 100 * nights;
+        if (r.extraBedFee) {
+          gstVal += r.extraBed * r.extraBedFee * (r.gstPercent || 0) / 100 * nights;
+        }
+      });
+      t += gstVal;
+    }
 
     setGstAmount(gstVal);
     setTotal(t);
-    setBalance(t - advance);
+    setBalance(t - Number(advance || 0));
   }, [rooms, kitchenRent, discount, gst, advance, checkIn, checkOut]);
 
   const addRoomRow = () => {
     setRooms([
       ...rooms,
-      { roomType: "", noOfRooms: 1, extraBed: 0, ac: true, rate: 0 },
+      { roomType: "", noOfRooms: 1, extraBed: 0, ac: true, rate: 0, gstPercent: 0, acRate: 0, extraBedFee: 0 },
     ]);
   };
 
@@ -121,18 +135,28 @@ const BookingForm = () => {
     if (rooms.length > 1) setRooms(rooms.slice(0, -1));
   };
 
+  /* UPDATE ROOM DETAILS AND FETCH EXTRA INFO FROM ROOM LIST */
   const updateRoom = (i, key, value) => {
     const updated = [...rooms];
     updated[i][key] = value;
 
-   if (key === "roomType") {
+    if (key === "roomType") {
       if (value === "") {
         updated[i].rate = 0;
+        updated[i].gstPercent = 0;
+        updated[i].acRate = 0;
+        updated[i].extraBedFee = 0;
       } else {
         const selected = roomList.find((r) => r.roomType === value);
-        if (selected) updated[i].rate = selected.rate;
+        if (selected) {
+          updated[i].rate = selected.rate || 0;
+          updated[i].gstPercent = selected.gstPercent || 0;
+          updated[i].acRate = selected.acRate || 0;
+          updated[i].extraBedFee = selected.extraBedFee || 0;
+        }
       }
     }
+
     setRooms(updated);
   };
 
@@ -140,7 +164,7 @@ const BookingForm = () => {
     <div style={{ height: "100vh", overflowY: "auto", padding: "1rem" }}>
       <style>{inputPlaceholderStyle}</style>
       <form className="container-fluid">
-        {/* GUEST DETAILS */}
+        {/* === Guest Details === */}
         <h4 style={textStyle}>Guest Details</h4>
         <div className="row mb-3">
           <div className="col-md-6">
@@ -199,29 +223,15 @@ const BookingForm = () => {
           </div>
         </div>
 
-        {/* ROOM HEADER */}
+        {/* === Room Details === */}
         <div className="d-flex justify-content-between align-items-center mb-2">
           <h4 style={textStyle}>Room Details</h4>
           <div>
-            <button
-              type="button"
-              className="btn btn-sm btn-success me-2"
-              onClick={addRoomRow}
-            >
-              +
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-danger"
-              onClick={removeRoomRow}
-              disabled={rooms.length === 1}
-            >
-              −
-            </button>
+            <button type="button" className="btn btn-sm btn-success me-2" onClick={addRoomRow}>+</button>
+            <button type="button" className="btn btn-sm btn-danger" onClick={removeRoomRow} disabled={rooms.length === 1}>−</button>
           </div>
         </div>
 
-        {/* ROOM DETAILS TABLE */}
         <div className="table-responsive mb-4">
           <table style={{ width: "100%", marginTop: "1rem" }}>
             <thead>
@@ -233,72 +243,54 @@ const BookingForm = () => {
                 <th>Rate</th>
               </tr>
             </thead>
-
             <tbody>
               {rooms.map((r, i) => (
                 <tr key={i} style={{ color: "#003366" }}>
                   <td>
-                    
                     <select
                       className="form-select"
                       style={glassInput}
                       value={r.roomType}
-                      onChange={(e) =>
-                        updateRoom(i, "roomType", e.target.value)
-                      }
+                      onChange={(e) => updateRoom(i, "roomType", e.target.value)}
                     >
                       <option value="">Select</option>
                       {roomList.map((rt) => (
-                        <option key={rt.id} value={rt.roomType}>
-                          {rt.roomType}
-                        </option>
+                        <option key={rt.id} value={rt.roomType}>{rt.roomType}</option>
                       ))}
                     </select>
                   </td>
-
                   <td>
-                    
                     <input
                       type="number"
                       className="form-control"
                       style={glassInput}
                       value={r.noOfRooms}
-                      onChange={(e) =>
-                        updateRoom(i, "noOfRooms", +e.target.value)
-                      }
+                      onChange={(e) => updateRoom(i, "noOfRooms", +e.target.value)}
                     />
                   </td>
-
                   <td>
-                    
                     <input
                       type="number"
                       className="form-control"
                       style={glassInput}
                       value={r.extraBed}
-                      onChange={(e) =>
-                        updateRoom(i, "extraBed", +e.target.value)
-                      }
+                      onChange={(e) => updateRoom(i, "extraBed", +e.target.value)}
                     />
                   </td>
-
                   <td className="text-center" style={{ paddingRight: "2rem" }}>
-                    
                     <input
                       type="checkbox"
                       checked={r.ac}
                       onChange={(e) => updateRoom(i, "ac", e.target.checked)}
                     />
                   </td>
-
                   <td>
-                    
                     <input
                       type="number"
                       className="form-control"
                       style={glassInput}
-                      value={r.rate}
-                      onChange={(e) => updateRoom(i, "rate", +e.target.value)}
+                      value={r.rate + (r.ac && r.acRate ? r.acRate : 0)}
+                      disabled
                     />
                   </td>
                 </tr>
@@ -307,7 +299,7 @@ const BookingForm = () => {
           </table>
         </div>
 
-        {/* PAYMENTS */}
+        {/* === Payments === */}
         <h4 style={textStyle}>Payments</h4>
         <div className="row mb-3">
           <div className="col-md-6">
@@ -358,34 +350,29 @@ const BookingForm = () => {
           </div>
         </div>
 
-      {/* ✅ GST + GST AMOUNT (SAME LINE) */}
-<div className="row mb-3 align-items-center">
-  {/* GST Checkbox */}
-  <div className="col-md-3">
-    <div className="form-check">
-      <input
-        className="form-check-input"
-        type="checkbox"
-        checked={gst}
-        onChange={(e) => setGst(e.target.checked)}
-      />
-      <label style={textStyle} className="form-check-label">
-        GST
-      </label>
-    </div>
-  </div>
-
-  {/* GST Amount */}
-  <div className="col-md-3">
-    <label style={textStyle}>GST Amount</label>
-    <input
-      style={fieldStyle}
-      className="form-control"
-      value={gst ? gstAmount.toFixed(2) : ""}
-      disabled
-    />
-  </div>
-</div>
+        {/* GST Checkbox */}
+        <div className="row mb-3 align-items-center">
+          <div className="col-md-3">
+            <div className="form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                checked={gst}
+                onChange={(e) => setGst(e.target.checked)}
+              />
+              <label style={textStyle} className="form-check-label">GST</label>
+            </div>
+          </div>
+          <div className="col-md-3">
+            <label style={textStyle}>GST Amount</label>
+            <input
+              style={fieldStyle}
+              className="form-control"
+              value={gst ? gstAmount.toFixed(2) : ""}
+              disabled
+            />
+          </div>
+        </div>
 
         <label style={textStyle}>Remarks</label>
         <textarea

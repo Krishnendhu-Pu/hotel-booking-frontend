@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const UpdateRooms = () => {
@@ -7,6 +7,9 @@ const UpdateRooms = () => {
 
   const [roomType, setRoomType] = useState("");
   const [rate, setRate] = useState("");
+  const [gstPercent, setGstPercent] = useState("");
+  const [acRate, setAcRate] = useState("");
+  const [extraBedFee, setExtraBedFee] = useState("");
   const [remarks, setRemarks] = useState("");
   const [noOfRooms, setNoOfRooms] = useState("");
 
@@ -28,7 +31,10 @@ const UpdateRooms = () => {
     setSelectedRoomId(room.id);
     setRoomType(room.roomType);
     setRate(room.rate);
-    setRemarks(room.remarks);
+    setGstPercent(room.gstPercent ?? "");
+    setAcRate(room.acRate ?? "");
+    setExtraBedFee(room.extraBedFee ?? "");
+    setRemarks(room.remarks ?? "");
     setNoOfRooms(room.noOfRooms);
   };
 
@@ -46,7 +52,15 @@ const UpdateRooms = () => {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ roomType, rate, remarks, noOfRooms }),
+          body: JSON.stringify({
+            roomType,
+            rate,
+            gstPercent: gstPercent || null,
+            acRate: acRate || null,
+            extraBedFee: extraBedFee || null,
+            remarks,
+            noOfRooms,
+          }),
         }
       );
 
@@ -84,6 +98,9 @@ const UpdateRooms = () => {
       setSelectedRoomId(null);
       setRoomType("");
       setRate("");
+      setGstPercent("");
+      setAcRate("");
+      setExtraBedFee("");
       setRemarks("");
       setNoOfRooms("");
 
@@ -119,22 +136,26 @@ const UpdateRooms = () => {
 
       {/* ROOM TABLE */}
       <div className="table-responsive mb-4">
-        <table 
-        style={{
-                width: "100%",
-                marginTop: "1rem",
-              }}>
-          
+        <table style={{ width: "100%", marginTop: "1rem" }}>
           <thead>
             <tr style={{ background: "#003366", color: "white" }}>
               <th>Select</th>
               <th>Room Type</th>
-              <th>Rate</th>
+              <th style={{ paddingRight: "2rem" }}>Rate</th>
+              <th >GST %</th>
+              <th>AC Rate</th>
+              <th>Extra Bed</th>
               <th>No Of Rooms</th>
               <th>Remarks</th>
             </tr>
           </thead>
-          <tbody style={{ color: "#fefefaff", background: "rgba(255,255,255,0.09)",textShadow: "0 2px 8px #0d2250ff" }}>
+          <tbody
+            style={{
+              color: "#fefefaff",
+              background: "rgba(255,255,255,0.09)",
+              textShadow: "0 2px 8px #0d2250ff",
+            }}
+          >
             {rooms.map((room) => (
               <tr
                 key={room.id}
@@ -151,7 +172,10 @@ const UpdateRooms = () => {
                   />
                 </td>
                 <td>{room.roomType}</td>
-                <td>₹{room.rate}</td>
+                <td style={{ paddingRight: "2rem" }}>₹{room.rate}</td>
+                <td >{room.gstPercent ?? "-"}%</td>
+                <td>₹{room.acRate ?? "-"}</td>
+                <td>₹{room.extraBedFee ?? "-"}</td>
                 <td>{room.noOfRooms}</td>
                 <td>{room.remarks}</td>
               </tr>
@@ -179,6 +203,45 @@ const UpdateRooms = () => {
             className="form-control form-control-sm"
             value={rate}
             onChange={(e) => setRate(e.target.value)}
+          />
+        </div>
+
+        <div className="col-md-4">
+          <label className="fw-bold" >GST %</label>
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            value={gstPercent}
+            onChange={(e) =>
+  setGstPercent(e.target.value === "" ? "" : Number(e.target.value))
+}
+
+          />
+        </div>
+
+        <div className="col-md-4">
+          <label className="fw-bold" >AC Rate</label>
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            value={acRate}
+            onChange={(e) =>
+  setAcRate(e.target.value === "" ? "" : Number(e.target.value))
+}
+
+          />
+        </div>
+
+        <div className="col-md-4">
+          <label className="fw-bold">Extra Bed Fee</label>
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            value={extraBedFee}
+            onChange={(e) =>
+  setExtraBedFee(e.target.value === "" ? "" : Number(e.target.value))
+}
+
           />
         </div>
 
@@ -218,10 +281,7 @@ const UpdateRooms = () => {
           {loading ? "Updating..." : "Update"}
         </button>
 
-        <button
-          className="btn btn-danger w-100 fw-bold"
-          onClick={handleDelete}
-        >
+        <button className="btn btn-danger w-100 fw-bold" onClick={handleDelete}>
           Delete
         </button>
       </div>
