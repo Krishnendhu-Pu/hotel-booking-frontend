@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { jsPDF } from "jspdf";
 
 /* 🎨 COLOR PALETTE */
 const labelColor = "#b7c9f2";
@@ -42,8 +43,12 @@ const inputPlaceholderStyle = `
   select option { background: rgba(20, 30, 60, 0.95); color: ${inputTextColor}; }
 `;
 
-const BookingForm = () => {
-  useEffect(() => { window.scrollTo(0, 0); }, []);
+const BookingForm = ({ id }) => {
+  const isEdit = Boolean(id);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   /* STATES */
   const [customerName, setCustomerName] = useState("");
@@ -68,17 +73,45 @@ const BookingForm = () => {
   const [total, setTotal] = useState(0);
   const [balance, setBalance] = useState(0);
 
-  /* FETCH ROOMS FROM API */
+  /* NEW FIELDS */
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [status, setStatus] = useState("Confirmed");
+
+  /* FETCH ROOM MASTER */
   useEffect(() => {
     fetch("http://localhost:8080/api/bookings/roomslist")
-      .then((res) => res.json())
-      .then((data) => setRoomList(data));
+      .then(res => res.json())
+      .then(data => setRoomList(Array.isArray(data) ? data : []))
+      .catch(() => setRoomList([]));
   }, []);
+
+  /* LOAD BOOKING FOR EDIT */
+  useEffect(() => {
+    if (!isEdit) return;
+
+    fetch(`http://localhost:8080/api/bookings/${id}`)
+      .then(res => res.json())
+      .then(b => {
+        setCustomerName(b.customerName);
+        setPax(b.pax);
+        setMobile(b.mobile);
+        setCheckIn(b.checkIn?.substring(0, 16));
+        setCheckOut(b.checkOut?.substring(0, 16));
+        setRooms(b.rooms || []);
+        setAdvance(b.advance);
+        setAdvanceMode(b.advanceMode);
+        setKitchenRent(b.kitchenRent);
+        setDiscount(b.discount);
+        setGst(b.gst);
+        setRemarks(b.remarks);
+        setPaymentCompleted(b.paymentCompleted);
+        setStatus(b.status || "Confirmed");
+      });
+  }, [id, isEdit]);
 
   /* CALCULATE TOTAL BASED ON ROOMS, AC, EXTRA BED, GST, AND DATES */
   useEffect(() => {
     let roomTotal = 0;
-
     let nights = 1;
     if (checkIn && checkOut) {
       const inDate = new Date(checkIn);
@@ -90,52 +123,35 @@ const BookingForm = () => {
 
     rooms.forEach((r) => {
       let effectiveRate = r.rate;
-
-      // If AC selected, add AC rate
-      if (r.ac && r.acRate) {
-        effectiveRate += r.acRate;
-      }
-
+      if (r.ac && r.acRate) effectiveRate += r.acRate;
       roomTotal += effectiveRate * r.noOfRooms * nights;
-
-      // Extra bed charge
-      if (r.extraBedFee) {
-        roomTotal += r.extraBed * r.extraBedFee * nights;
-      }
+      if (r.extraBedFee) roomTotal += r.extraBed * r.extraBedFee * nights;
     });
 
     let t = roomTotal + Number(kitchenRent || 0) - Number(discount || 0);
-
     let gstVal = 0;
     if (gst) {
-      // Calculate GST per room
       rooms.forEach((r) => {
         const rateWithAc = r.rate + (r.ac && r.acRate ? r.acRate : 0);
         gstVal += rateWithAc * r.noOfRooms * (r.gstPercent || 0) / 100 * nights;
-        if (r.extraBedFee) {
-          gstVal += r.extraBed * r.extraBedFee * (r.gstPercent || 0) / 100 * nights;
-        }
+        if (r.extraBedFee) gstVal += r.extraBed * r.extraBedFee * (r.gstPercent || 0) / 100 * nights;
       });
       t += gstVal;
     }
 
     setGstAmount(gstVal);
     setTotal(t);
-    setBalance(t - Number(advance || 0));
-  }, [rooms, kitchenRent, discount, gst, advance, checkIn, checkOut]);
+    setBalance(paymentCompleted ? 0 : t - Number(advance || 0));
+  }, [rooms, kitchenRent, discount, gst, advance, checkIn, checkOut, paymentCompleted]);
 
   const addRoomRow = () => {
-    setRooms([
-      ...rooms,
-      { roomType: "", noOfRooms: 1, extraBed: 0, ac: true, rate: 0, gstPercent: 0, acRate: 0, extraBedFee: 0 },
-    ]);
+    setRooms([...rooms, { roomType: "", noOfRooms: 1, extraBed: 0, ac: true, rate: 0, gstPercent: 0, acRate: 0, extraBedFee: 0 }]);
   };
 
   const removeRoomRow = () => {
     if (rooms.length > 1) setRooms(rooms.slice(0, -1));
   };
 
-  /* UPDATE ROOM DETAILS AND FETCH EXTRA INFO FROM ROOM LIST */
   const updateRoom = (i, key, value) => {
     const updated = [...rooms];
     updated[i][key] = value;
@@ -156,14 +172,162 @@ const BookingForm = () => {
         }
       }
     }
-
     setRooms(updated);
+  };
+
+  /* CHECK AVAILABILITY */
+  const checkAvailability = async () => {
+    if (!checkIn || !checkOut) {
+      alert("Please select check-in and check-out dates");
+      return false;
+    }
+
+    try {
+      const res = await fetch("http://localhost:8080/api/bookings");
+      const existingBookings = await res.json();
+
+      const newCheckIn = new Date(checkIn);
+      const newCheckOut = new Date(checkOut);
+
+      for (let r of rooms) {
+        if (!r.roomType) continue;
+
+        const roomInfo = roomList.find((rm) => rm.roomType === r.roomType);
+        if (!roomInfo) continue;
+
+        let bookedCount = 0;
+        existingBookings.forEach((b) => {
+          b.rooms.forEach((br) => {
+            if (br.roomType === r.roomType) {
+              const bCheckIn = new Date(b.checkIn);
+              const bCheckOut = new Date(b.checkOut);
+              if (!(newCheckOut <= bCheckIn || newCheckIn >= bCheckOut)) {
+                bookedCount += br.noOfRooms;
+              }
+            }
+          });
+        });
+
+        const available = roomInfo.noOfRooms - bookedCount;
+        if (r.noOfRooms > available) {
+          alert(`Only ${available} ${r.roomType} rooms are available for selected dates`);
+          return false;
+        }
+      }
+      return true;
+    } catch (err) {
+      console.error(err);
+      alert("Error checking room availability");
+      return false;
+    }
+  };
+
+  /* GENERATE PDF BILL */
+  const generatePDF = (bookingData) => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Hotel Booking Bill", 105, 20, { align: "center" });
+
+    doc.setFontSize(12);
+    doc.text(`Customer Name: ${bookingData.customerName}`, 20, 40);
+    doc.text(`Mobile: ${bookingData.mobile}`, 20, 50);
+    doc.text(`Pax: ${bookingData.pax}`, 20, 60);
+    doc.text(`Check-In: ${bookingData.checkIn}`, 20, 70);
+    doc.text(`Check-Out: ${bookingData.checkOut}`, 20, 80);
+    doc.text(`Status: ${bookingData.status}`, 20, 90);
+    doc.text(`Payment Completed: ${bookingData.paymentCompleted ? "Yes" : "No"}`, 20, 100);
+
+    let y = 110;
+    doc.text("Rooms:", 20, y);
+    bookingData.rooms.forEach((r, i) => {
+      y += 10;
+      doc.text(
+        `${i + 1}. ${r.roomType} | No: ${r.noOfRooms} | Extra Bed: ${r.extraBed} | AC: ${r.ac ? "Yes" : "No"} | Rate: ₹${r.rate + (r.ac ? r.acRate : 0)}`,
+        25,
+        y
+      );
+    });
+
+    y += 10;
+    doc.text(`Kitchen Rent: ₹${bookingData.kitchenRent || 0}`, 20, y);
+    y += 10;
+    doc.text(`Discount: ₹${bookingData.discount || 0}`, 20, y);
+    y += 10;
+    doc.text(`GST: ₹${bookingData.gstAmount.toFixed(2)}`, 20, y);
+    y += 10;
+    doc.text(`Total Amount: ₹${bookingData.totalAmount.toFixed(2)}`, 20, y);
+    y += 10;
+    doc.text(`Advance Paid: ₹${bookingData.advance || 0}`, 20, y);
+    y += 10;
+    doc.text(`Balance: ₹${bookingData.balanceAmount.toFixed(2)}`, 20, y);
+
+    y += 10;
+    doc.text(`Remarks: ${bookingData.remarks}`, 20, y);
+
+    doc.save(`Booking_${bookingData.customerName}_${new Date().getTime()}.pdf`);
+  };
+
+  /* SUBMIT */
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const available = await checkAvailability();
+    if (!available) return;
+
+    const payload = {
+      customerName,
+      pax,
+      mobile,
+      checkIn,
+      checkOut,
+      rooms,
+      advance,
+      advanceMode,
+      kitchenRent,
+      discount,
+      gst,
+      gstAmount,
+      totalAmount: total,
+      balanceAmount: balance,
+      paymentCompleted,
+      status,
+      remarks
+    };
+
+    fetch(isEdit ? `http://localhost:8080/api/bookings/${id}` : "http://localhost:8080/api/bookings", {
+      method: isEdit ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(() => {
+      alert(isEdit ? "Booking updated" : "Booking created");
+
+      // Generate PDF after successful save
+      generatePDF(payload);
+
+      if (!isEdit) {
+        setCustomerName("");
+        setPax("");
+        setMobile("");
+        setCheckIn("");
+        setCheckOut("");
+        setRooms([{ roomType: "", noOfRooms: 1, extraBed: 0, ac: true, rate: 0, gstPercent: 0, acRate: 0, extraBedFee: 0 }]);
+        setAdvance("");
+        setAdvanceMode("");
+        setKitchenRent("");
+        setDiscount("");
+        setGst(false);
+        setRemarks("");
+        setTotal(0);
+        setBalance(0);
+        setGstAmount(0);
+      }
+    });
   };
 
   return (
     <div style={{ height: "100vh", overflowY: "auto", padding: "1rem" }}>
       <style>{inputPlaceholderStyle}</style>
-      <form className="container-fluid">
+      <form className="container-fluid" onSubmit={handleSubmit}>
         {/* === Guest Details === */}
         <h4 style={textStyle}>Guest Details</h4>
         <div className="row mb-3">
@@ -174,6 +338,7 @@ const BookingForm = () => {
               className="form-control"
               placeholder="Enter Name"
               value={customerName}
+              required
               onChange={(e) => setCustomerName(e.target.value)}
             />
           </div>
@@ -182,10 +347,11 @@ const BookingForm = () => {
             <input
               style={fieldStyle}
               className="form-control"
-              type="number"
+              type="numeric"
               placeholder="Enter Pax"
               value={pax}
-              onChange={(e) => setPax(e.target.value)}
+              required
+              onChange={(e) => setPax(+e.target.value)}
             />
           </div>
         </div>
@@ -198,6 +364,7 @@ const BookingForm = () => {
               className="form-control"
               placeholder="Enter Mobile"
               value={mobile}
+              required
               onChange={(e) => setMobile(e.target.value)}
             />
           </div>
@@ -209,6 +376,7 @@ const BookingForm = () => {
               type="datetime-local"
               value={checkIn}
               onChange={(e) => setCheckIn(e.target.value)}
+              required
             />
           </div>
           <div className="col-md-3">
@@ -218,6 +386,7 @@ const BookingForm = () => {
               className="form-control"
               type="datetime-local"
               value={checkOut}
+              required
               onChange={(e) => setCheckOut(e.target.value)}
             />
           </div>
@@ -382,6 +551,37 @@ const BookingForm = () => {
           placeholder="Enter Remarks"
           onChange={(e) => setRemarks(e.target.value)}
         />
+
+        <h4 style={textStyle}>Booking Status</h4>
+
+        <div className="row mb-3">
+          <div className="col-md-6">
+            <label style={textStyle}>Status</label>
+            <select
+              className="form-select"
+              style={fieldStyle}
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option value="CONFIRMED">CONFIRMED</option>
+              <option value="PENDING">PENDING</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </div>
+          <div className="col-md-6 d-flex align-items-center">
+            <div className="form-check mt-4">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                checked={paymentCompleted}
+                onChange={(e) => setPaymentCompleted(e.target.checked)}
+              />
+              <label style={textStyle} className="form-check-label">
+                Payment Completed
+              </label>
+            </div>
+          </div>
+        </div>
 
         <h5 style={textStyle}>Total: ₹{total}</h5>
         <h5 style={textStyle}>Balance: ₹{balance}</h5>

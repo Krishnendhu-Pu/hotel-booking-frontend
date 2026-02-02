@@ -6,6 +6,7 @@ import RegisterPage from "./RegisterPage";
 import ForgotPasswordPage from "./ForgotPasswordPage";
 import Home from "./Home";
 import BookingForm from "./BookingForm";
+import PreviousBookings from "./PreviousBookings";
 
 function App() {
    return (
@@ -17,6 +18,10 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/home" element={<Home />} />
         <Route path="/bookings/new" element={<BookingForm />} />
+        <Route path="/bookings/new" element={<BookingForm />} />
+        <Route path="/bookings/edit/:id" element={<BookingForm />} />
+        <Route path="/previous-bookings" element={<PreviousBookings />} />
+
       </Routes>
     </Router>
   );

@@ -4,6 +4,7 @@ import BookingForm from "./BookingForm";
 import PreviousBookings from "./PreviousBookings";
 import AddRooms from "./AddRooms";
 import UpdateRooms from "./UpdateRooms.js";
+import BookingSummary from "./BookingSummary.js"
 
 export default function Home() {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ export default function Home() {
   const [openSection, setOpenSection] = useState(null);
   const [currentPage, setCurrentPage] = useState(null);
   const menuRefs = useRef({});
+  const [editingBookingId, setEditingBookingId] = useState(null);
+
 
   const features = [
     {
@@ -37,14 +40,7 @@ export default function Home() {
         { title: "Bulk Settings", path: "/bulk/settings" },
       ],
     },
-    {
-      title: "Daily Report",
-      children: [
-        { title: "Today Report", path: "/report/today" },
-        { title: "Weekly Report", path: "/report/weekly" },
-        { title: "Monthly Report", path: "/report/monthly" },
-      ],
-    },
+   
     {
       title: "GST Bill",
       children: [
@@ -101,9 +97,10 @@ export default function Home() {
     navigate("/login");
   };
 
-  const handleNavigate = (path) => {
-    setCurrentPage(path);
-  };
+  const handleNavigate = (path, bookingId = null) => {
+  setEditingBookingId(bookingId);
+  setCurrentPage(path);
+};
 
   const getSubmenuPosition = (idx) => {
     if (menuRefs.current[idx]) {
@@ -142,18 +139,22 @@ export default function Home() {
           </div>
         );
       case "/bookings/new":
-        return <BookingForm />;
-      case "/bookings/previous":       
-          return <PreviousBookings />;
+  return <BookingForm />;
+
+case "/bookings/edit":
+  return <BookingForm id={editingBookingId} />;
+
+      case "/bookings/previous":
+  return <PreviousBookings onEdit={(id) => handleNavigate("/bookings/edit", id)} />;
+      
       case "/bookings/summary":
-        return (
-          <div style={{ color: "#85afdaff", fontSize: "1.5rem" }}>
-            Booking Summary - Coming Soon
-          </div>
-        );
+        return <BookingSummary />
       case "/rooms/AddRooms":
           return <AddRooms />
- 
+     
+        
+      
+     
         
       case "/rooms/UpdateRooms":
         return <UpdateRooms/>

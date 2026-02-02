@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import autoTable from "jspdf-autotable";
 import jsPDF from "jspdf";
 
+const PreviousBookings = ({ onEdit }) => {
 
-const PreviousBookings = () => {
   const [searchType, setSearchType] = useState("single");
   const [singleDate, setSingleDate] = useState("");
   const [fromDate, setFromDate] = useState("");
@@ -12,6 +12,7 @@ const PreviousBookings = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [roomTypes, setRoomTypes] = useState([]);
+  
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -19,11 +20,13 @@ const PreviousBookings = () => {
   const [searchId, setSearchId] = useState("");
   const [editingBooking, setEditingBooking] = useState(null);
   const [selectedBookingId, setSelectedBookingId] = useState(null);
+  
+
 
   const [editForm, setEditForm] = useState({
     customerName: "",
     roomType: "",
-    bookingDate: "",
+    checkIn: "",
     status: "CONFIRMED",
   });
 
@@ -121,11 +124,13 @@ const PreviousBookings = () => {
     const b = bookings.find((bk) => bk.id === selectedBookingId);
     if (!b) return;
 
-    setEditingBooking(b);
+    onEdit(selectedBookingId);
+
+
     setEditForm({
       customerName: b.customerName ?? "",
       roomType: b.roomType ?? "",
-      bookingDate: b.bookingDate,
+      checkIn: b.checkIn,
       status: b.status ?? "CONFIRMED",
     });
 
@@ -186,8 +191,9 @@ const PreviousBookings = () => {
       i + 1,
       b.id,
       b.customerName,
-      b.roomType,
-      formatDateTime(b.bookingDate),
+      b.rooms?.map(r => r.roomType).join(", "),
+formatDateTime(b.checkIn),
+
       b.status,
     ]);
 
@@ -425,10 +431,10 @@ const PreviousBookings = () => {
               
               <input
                 type="datetime-local"
-                name="bookingDate"
-                value={editForm.bookingDate?.substring(0, 16)}
+                name="checkIn"
+                value={editForm.checkIn?.substring(0, 16)}
                 onChange={(e) =>
-                  setEditForm({ ...editForm, bookingDate: e.target.value })
+                  setEditForm({ ...editForm, checkIn: e.target.value })
                 }
                 style={{
           padding: "0.5rem",
@@ -558,8 +564,12 @@ const PreviousBookings = () => {
                     </td>
                     <td>{b.id}</td>
                     <td>{b.customerName}</td>
-                    <td>{b.roomType}</td>
-                    <td>{formatDateTime(b.bookingDate)}</td>
+                    <td>
+  {b.rooms?.map(r => `${r.roomType} (${r.noOfRooms})`).join(", ")}
+</td>
+
+<td>{formatDateTime(b.checkIn)}</td>
+
                     <td>{b.status}</td>
                   </tr>
                 ))}
